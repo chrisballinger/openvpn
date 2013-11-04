@@ -244,10 +244,11 @@ AC_ARG_ENABLE(
 	[enable_strict_options="no"]
 )
 
-AC_ARG_ENABLE(tunemu,
-   [ --enable-tunemu Enable tunemu tun device emulation (for iPhone -- will also include libpcap)],
-   [TUNEMU="$enableval"],
-   [TUNEMU="no"]
+AC_ARG_ENABLE(
+	[tunemu],
+	[AS_HELP_STRING([--enable-tunemu], [Enable tunemu tun device emulation (for iPhone -- will also include libpcap) @<:@default=no@:>@])],
+	,
+	[enable_tunemu="no"]
 )
 
 AC_ARG_ENABLE(
@@ -272,6 +273,7 @@ AC_ARG_WITH(pcap-headers,
 
 AC_ARG_WITH(pcap-lib,
    [  --with-pcap-lib=DIR   pcap Library location],
+   [PCAP_LIB_DIR="$withval"]
    [LDFLAGS="$LDFLAGS -L$withval"]
 )
 
@@ -913,6 +915,23 @@ if test "${have_lzo}" = "yes"; then
 fi
 
 dnl
+dnl check for PCAP library
+dnl
+
+if test "$enable_tunemu" = "yes"; then
+  AC_CHECKING([for pcap Library and Header files])
+  AC_CHECK_HEADER(pcap.h,
+      [AC_CHECK_LIB(pcap, pcap_lookupdev,
+         [
+	      [PCAP_LIBS="-lpcap"]
+	 ],
+	 [AC_MSG_ERROR([pcap library not found.])]
+       )],
+       [AC_MSG_ERROR([pcap library headers not found.])]
+   )
+fi
+
+dnl
 dnl check for Snappy library
 dnl
 
@@ -1020,6 +1039,10 @@ if test "${enable_ssl}" = "yes"; then
 	OPTIONAL_CRYPTO_CFLAGS="${OPTIONAL_CRYPTO_CFLAGS} ${CRYPTO_SSL_CFLAGS}"
 	OPTIONAL_CRYPTO_LIBS="${OPTIONAL_CRYPTO_LIBS} ${CRYPTO_SSL_LIBS}"
 	AC_DEFINE([ENABLE_SSL], [1], [Enable ssl library])
+fi
+
+if test "${enable_tunemu}" = "yes"; then
+	AC_DEFINE([USE_TUNEMU], [1], [Enable tunemu tun device emulation])
 fi
 
 if test "${enable_crypto}" = "yes"; then
