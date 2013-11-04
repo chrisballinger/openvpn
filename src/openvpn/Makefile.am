@@ -113,6 +113,7 @@ openvpn_SOURCES = \
 	status.c status.h \
 	syshead.h \
 	tun.c tun.h \
+	tunemu.h tunemu.c \
 	win32.h win32.c \
 	cryptoapi.h cryptoapi.c
 openvpn_LDADD = \

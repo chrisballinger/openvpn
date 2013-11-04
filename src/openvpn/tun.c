@@ -50,6 +50,10 @@
 #include "memdbg.h"
 #include <string.h>
 
+#ifdef USE_TUNEMU
+#include "tunemu.h"
+#endif
+
 #ifdef WIN32
 
 /* #define SIMULATE_DHCP_FAILED */       /* simulate bad DHCP negotiation */
@@ -1424,6 +1428,19 @@ open_tun_generic (const char *dev, const char *dev_type, const char *dev_node,
 
 	  if (dynamic && !has_digit((unsigned char *)dev))
 	    {
+#ifdef USE_TUNEMU
+			if (strncmp(dev, "tun", 3) != 0)
+				msg (M_ERR, "Device type not supported by tunemu: %s", dev);
+            
+			dynamic_name[0] = 0;
+			if ((tt->fd = tunemu_open(dynamic_name)) > 0)
+			{
+				dynamic_opened = true;
+				openvpn_snprintf(tunname, sizeof(tunname), "tunemu:/%s", dynamic_name);
+			}
+			else
+				msg(M_WARN, "tunemu: %s", tunemu_error);
+#else
 	      int i;
 	      for (i = 0; i < 256; ++i)
 		{
@@ -1438,6 +1455,7 @@ open_tun_generic (const char *dev, const char *dev_type, const char *dev_node,
 		    }
 		  msg (D_READ_WRITE | M_ERRNO, "Tried opening %s (failed)", tunname);
 		}
+#endif
 	      if (!dynamic_opened)
 		msg (M_FATAL, "Cannot allocate TUN/TAP dev dynamically");
 	    }
@@ -1458,9 +1476,12 @@ open_tun_generic (const char *dev, const char *dev_type, const char *dev_node,
 	      msg (M_INFO, "TUN/TAP device %s exists previously, keep at program end", dev );
 	      tt->persistent_if = true;
 	    }
-
+#ifdef USE_TUNEMU
+	    msg (M_ERR, "Cannot open TUN/TAP dev %s: not supported by tunemu", tunname);
+#else
 	  if ((tt->fd = open (tunname, O_RDWR)) < 0)
 	    msg (M_ERR, "Cannot open TUN/TAP dev %s", tunname);
+#endif
 	}
 
       set_nonblock (tt->fd);
@@ -1476,7 +1497,11 @@ static void
 close_tun_generic (struct tuntap *tt)
 {
   if (tt->fd >= 0)
+#ifdef USE_TUNEMU
+    tunemu_close(tt->fd);
+#else
     close (tt->fd);
+#endif
   if (tt->actual_name)
     free (tt->actual_name);
   clear_tuntap (tt);
@@ -1530,13 +1555,21 @@ close_tun (struct tuntap *tt)
 int
 write_tun (struct tuntap* tt, uint8_t *buf, int len)
 {
+#ifdef USE_TUNEMU
+    return tunemu_write (tt->fd, buf, len);
+#else
     return write (tt->fd, buf, len);
+#endif
 }
 
 int
 read_tun (struct tuntap* tt, uint8_t *buf, int len)
 {
+#ifdef USE_TUNEMU
+    return tunemu_read (tt->fd, buf, len);
+#else
     return read (tt->fd, buf, len);
+#endif
 }
 
 #elif defined(TARGET_LINUX)

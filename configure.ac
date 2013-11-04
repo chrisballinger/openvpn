@@ -244,6 +244,12 @@ AC_ARG_ENABLE(
 	[enable_strict_options="no"]
 )
 
+AC_ARG_ENABLE(tunemu,
+   [ --enable-tunemu Enable tunemu tun device emulation (for iPhone -- will also include libpcap)],
+   [TUNEMU="$enableval"],
+   [TUNEMU="no"]
+)
+
 AC_ARG_ENABLE(
 	[selinux],
 	[AS_HELP_STRING([--enable-selinux], [enable SELinux support @<:@default=no@:>@])],
@@ -256,6 +262,17 @@ AC_ARG_ENABLE(
 	[AS_HELP_STRING([--enable-systemd], [enable systemd suppport @<:@default=no@:>@])],
 	,
 	[enable_systemd="no"]
+)
+
+AC_ARG_WITH(pcap-headers,
+   [  --with-pcap-headers=DIR pcap Include files location],
+   [PCAP_HDR_DIR="$withval"]
+   [CPPFLAGS="$CPPFLAGS -I$withval"]
+)
+
+AC_ARG_WITH(pcap-lib,
+   [  --with-pcap-lib=DIR   pcap Library location],
+   [LDFLAGS="$LDFLAGS -L$withval"]
 )
 
 AC_ARG_WITH(
